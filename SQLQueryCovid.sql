@@ -6,21 +6,21 @@ order by 3,4
 
 
 
--- выбираем данные, которые будем использовать
+-- selecting data 
 select location,date,total_cases, new_cases,total_deaths,population 
 from portfolioProject..CovidDeaths
 where continent is not null
 order by 1,2
 
---анализ общего числа случаев в сравнении с общим числом смертей
+-- Looking at total cases vs total deaths
 select location,date,total_cases, total_deaths,(total_deaths/total_cases)*100 as DeathPercentage
 from portfolioProject..CovidDeaths
 where location like '%Kazakhstan%' and
  continent is not null
 order by 1,2
 
---анализ общего числа случаев в сравнении с населением 
--- показывает процент населения, заболевшего covid
+--looking at total cases vs population
+-- shows percentage of population got covid
 select location,date,population,total_cases,(total_cases/population)*100 as CovidPercentage
 from portfolioProject..CovidDeaths
 where location like '%Kazakhstan%' and continent is not null
@@ -32,7 +32,7 @@ where continent is not null
 order by 1,2
 
 
---анализ стран с самым высоким уровнем инфицирования по сравнению с населением
+-- looking at location with highest infection rate compared to population уровнем инфицирования по сравнению с населением
 select location,population,MAX(total_cases) as HighestInfectionCount,MAX((total_cases/population))*100 as CovidPercentage
 from portfolioProject..CovidDeaths
 where continent is not null
@@ -40,15 +40,15 @@ group by location,population
 order by CovidPercentage desc
 
 
---страны с самым высоким показателем смертности на душу населения
+--showing countries with highest death count per population 
 select location,MAX(cast (total_deaths as int)) as TotalDeathCount
 from portfolioProject..CovidDeaths
 where continent is not null
 group by location 
 order by TotalDeathCount desc
 
---разбивание данных по континентам
--- континенты с самым высоким уровнем смертности на душу населения
+--Break down by continent
+-- showing continents with the highest death count per population
 select continent,MAX(cast (total_deaths as int)) as TotalDeathCount
 from portfolioProject..CovidDeaths
 where continent is  not null
@@ -56,7 +56,7 @@ group by continent
 order by TotalDeathCount desc
 
 
---глобальные значения
+--global numbers
 select SUM(new_cases) as Total_Cases, Sum(cast(new_deaths as int)) as total_Deaths, 
 sum(cast(new_deaths as int))/sum(new_cases)*100 as DeathsPercentage
 from portfolioProject..CovidDeaths
@@ -64,7 +64,7 @@ where continent is not null
 
 order by 1,2
 
---анализ общей численности населения в сравнении с количеством вакцинированных 
+-- looking at total population vs vaccinations
 select dea.continent,dea.location, dea.date, dea.population, vac.new_vaccinations,
 SUM(convert(int,vac.new_vaccinations )) over (Partition by dea.location order by dea.location,
 dea.date) as RollingPeopleVAccinated
@@ -77,7 +77,7 @@ where dea.continent is not null
 order by 2,3
 
 
---использование обобщенных табличных выражении  
+--use CTE
 
 with PopulationVSVaccination (Continent,location,date,population,new_vaccinations,RollingPeopleVAccinated)
 as
@@ -91,13 +91,14 @@ join portfolioProject..CovidVaccinations vac
 	on dea.location=vac.location
 	and dea.date=vac.date
 where dea.continent is not null
+--order by 2,3
 )
 select *,(RollingPeopleVAccinated/population)*100 
 from PopulationVSVaccination
 
 
 
---таблица временных параметров
+--temp table
 drop table if exists #percentPopulationVaccinated
 create table #percentPopulationVaccinated
 (
@@ -127,11 +128,9 @@ select *,(RollingPeopleVAccinated/population)*100
 from #percentPopulationVaccinated
 
 
---создание представления данных для последующей визуализации 
-use portfolioProject
-go
+--creating view to store data for later vizualizations
 
-Create view PercentPopulationVaccinated as 
+Create view ercentPopulationVaccinated as 
 select dea.continent,dea.location, dea.date, dea.population, vac.new_vaccinations,
 SUM(convert(int,vac.new_vaccinations )) over (Partition by dea.location order by dea.location,
 dea.date) as RollingPeopleVAccinated
@@ -141,9 +140,5 @@ join portfolioProject..CovidVaccinations vac
 	and dea.date=vac.date
 where dea.continent is not null
 
-
-
-
-select *
-from PercentPopulationVaccinated
+SELECT * FROM sys.views
 
